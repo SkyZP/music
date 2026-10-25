@@ -1,0 +1,151 @@
+/* ==========================================================================
+   Liquid Glass (iOS-style translucent UI)
+   --------------------------------------------------------------------------
+   Driven by <html> attributes/variables set in useLiquidGlassSync():
+     data-liquid-glass="on"        glass mode enabled (otherwise classic UI)
+     data-lg-scheme="light|dark"   resolved theme
+     data-wallpaper="on"           user wallpaper present
+     --lg-blur (px)  --lg-t (tint %)
+   Everything is scoped under [data-liquid-glass="on"], so switching the toggle
+   off restores the original solid look without touching component code.
+   ========================================================================== */
+
+:root {
+  --lg-blur: 28px;
+  --lg-t: 38;
+}
+
+/* ---- scheme tokens ------------------------------------------------------ */
+:root[data-liquid-glass="on"][data-lg-scheme="light"] {
+  --lg-rgb: 255 255 255;
+  --lg-fill: color-mix(in srgb, rgb(255 255 255) calc(var(--lg-t) * 1%), transparent);
+  --lg-fill-soft: color-mix(in srgb, rgb(255 255 255) calc(var(--lg-t) * 0.55%), transparent);
+  --lg-fill-hover: color-mix(in srgb, rgb(255 255 255) calc(var(--lg-t) * 0.85%), transparent);
+  --lg-sheen: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  --lg-spec-top: rgba(255, 255, 255, 0.95);
+  --lg-spec-bottom: rgba(255, 255, 255, 0.45);
+  --lg-ring: rgba(0, 0, 0, 0.07);
+  --lg-inner: rgba(255, 255, 255, 0.35);
+  --lg-drop: rgba(40, 40, 70, 0.18);
+  --lg-bright: 1.05;
+  --lg-a1: rgba(120, 140, 255, 0.55);
+  --lg-a2: rgba(255, 140, 180, 0.45);
+  --lg-a3: rgba(90, 200, 250, 0.5);
+  --lg-a4: rgba(190, 130, 255, 0.4);
+  --lg-base: #e9e9f1;
+
+  /* existing design tokens become translucent so legacy surfaces turn to glass */
+  --bg-surface: var(--lg-fill);
+  --bg-elevated: color-mix(in srgb, rgb(255 255 255) calc(var(--lg-t) * 1%), transparent);
+  --bg-panel: color-mix(in srgb, rgb(250 250 255) calc(var(--lg-t) * 1%), transparent);
+  --bg-overlay: color-mix(in srgb, rgb(250 250 255) min(calc(var(--lg-t) * 1% + 25%), 95%), transparent);
+  --bg-glass: var(--lg-fill-soft);
+  --border-primary: rgba(255, 255, 255, 0.5);
+  --border-secondary: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-liquid-glass="on"][data-lg-scheme="dark"] {
+  --lg-rgb: 28 28 34;
+  --lg-fill: color-mix(in srgb, rgb(28 28 34) calc(var(--lg-t) * 1%), transparent);
+  --lg-fill-soft: color-mix(in srgb, rgb(40 40 48) calc(var(--lg-t) * 0.55%), transparent);
+  --lg-fill-hover: color-mix(in srgb, rgb(60 60 70) calc(var(--lg-t) * 0.85%), transparent);
+  --lg-sheen: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.03) 38%,
+    rgba(255, 255, 255, 0.01) 62%,
+    rgba(255, 255, 255, 0.09) 100%
+  );
+  --lg-spec-top: rgba(255, 255, 255, 0.34);
+  --lg-spec-bottom: rgba(255, 255, 255, 0.1);
+  --lg-ring: rgba(255, 255, 255, 0.1);
+  --lg-inner: rgba(255, 255, 255, 0.05);
+  --lg-drop: rgba(0, 0, 0, 0.5);
+  --lg-bright: 1.08;
+  --lg-a1: rgba(88, 86, 214, 0.5);
+  --lg-a2: rgba(255, 45, 85, 0.28);
+  --lg-a3: rgba(10, 132, 255, 0.38);
+  --lg-a4: rgba(191, 90, 242, 0.3);
+  --lg-base: #05050a;
+
+  --bg-surface: var(--lg-fill);
+  --bg-elevated: color-mix(in srgb, rgb(44 44 52) calc(var(--lg-t) * 1%), transparent);
+  --bg-panel: color-mix(in srgb, rgb(38 38 46) calc(var(--lg-t) * 1%), transparent);
+  --bg-overlay: color-mix(in srgb, rgb(24 24 30) min(calc(var(--lg-t) * 1% + 25%), 95%), transparent);
+  --bg-glass: var(--lg-fill-soft);
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.08);
+}
+
+/* Nested forced-dark scopes (fullscreen player) keep the original opaque tokens
+   because [data-theme="dark"] / .dark redefine them closer to the element. */
+
+/* ---- aurora (default backdrop when no wallpaper is chosen) -------------- */
+.lg-aurora {
+  background:
+    radial-gradient(62% 52% at 12% 8%, var(--lg-a1, rgba(88, 86, 214, 0.5)) 0%, transparent 62%),
+    radial-gradient(55% 50% at 92% 12%, var(--lg-a2, rgba(255, 45, 85, 0.28)) 0%, transparent 62%),
+    radial-gradient(62% 56% at 85% 98%, var(--lg-a3, rgba(10, 132, 255, 0.38)) 0%, transparent 62%),
+    radial-gradient(52% 50% at 8% 92%, var(--lg-a4, rgba(191, 90, 242, 0.3)) 0%, transparent 62%),
+    var(--lg-base, var(--bg-canvas));
+}
+
+/* ---- main glass surface -------------------------------------------------- */
+:root[data-liquid-glass="on"] .liquid-glass {
+  background: var(--lg-sheen), var(--lg-fill);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(190%) brightness(var(--lg-bright));
+  backdrop-filter: blur(var(--lg-blur)) saturate(190%) brightness(var(--lg-bright));
+  box-shadow:
+    inset 0 1px 0.5px var(--lg-spec-top),
+    inset 0 -1px 0.5px var(--lg-spec-bottom),
+    inset 1px 0 0.5px var(--lg-spec-bottom),
+    inset -1px 0 0.5px var(--lg-spec-bottom),
+    inset 0 0 22px var(--lg-inner),
+    0 0 0 0.5px var(--lg-ring),
+    0 12px 36px -10px var(--lg-drop),
+    0 2px 8px -2px var(--lg-drop);
+}
+
+/* smaller controls: buttons, inputs, tab pills, grouped rows */
+:root[data-liquid-glass="on"] .liquid-glass-soft {
+  background: var(--lg-sheen), var(--lg-fill-soft);
+  -webkit-backdrop-filter: blur(calc(var(--lg-blur) * 0.6)) saturate(170%);
+  backdrop-filter: blur(calc(var(--lg-blur) * 0.6)) saturate(170%);
+  box-shadow:
+    inset 0 1px 0.5px var(--lg-spec-top),
+    inset 0 -0.5px 0.5px var(--lg-spec-bottom),
+    inset 0 0 12px var(--lg-inner),
+    0 0 0 0.5px var(--lg-ring);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 120ms ease;
+}
+
+:root[data-liquid-glass="on"] button.liquid-glass-soft:hover:not(:disabled),
+:root[data-liquid-glass="on"] .liquid-glass-soft.liquid-glass-hover:hover {
+  background: var(--lg-sheen), var(--lg-fill-hover);
+}
+
+/* Fallback for engines without backdrop-filter: keep text readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-liquid-glass="on"] .liquid-glass,
+  :root[data-liquid-glass="on"] .liquid-glass-soft {
+    background: var(--bg-overlay);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-liquid-glass="on"] .liquid-glass,
+  :root[data-liquid-glass="on"] .liquid-glass-soft {
+    background: var(--bg-overlay);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
